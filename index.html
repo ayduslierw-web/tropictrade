@@ -1,0 +1,41 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TropicTrade</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#041f22;color:#f5f7fa;font:15px Arial,sans-serif}header{height:70px;background:#041f22;border-bottom:1px solid #19534d;display:flex;align-items:center;padding:0 5%;gap:25px;position:sticky;top:0;z-index:5}.logo{font-size:24px;font-weight:900;color:#34d399}.logo b{color:#fff}nav{display:flex;gap:18px}nav a{color:#9bb3b0;text-decoration:none;font-weight:700}.login{margin-left:auto;background:#34d399;border:0;padding:11px 16px;border-radius:9px;font-weight:900;cursor:pointer}.page{display:none}.page.active{display:block}.hero{padding:90px 7%;background:#052a2b}.hero h1{font-size:clamp(42px,6vw,72px);margin:0 0 20px}.hero h1 span{color:#34d399}.hero p{color:#a7c8c3;font-size:17px}.btn{display:inline-block;margin-top:25px;padding:14px 20px;border-radius:9px;text-decoration:none;font-weight:900;background:#34d399;color:#032022}.wrap{width:90%;max-width:1100px;margin:45px auto}.panel{background:#073331;border:1px solid #19534d;border-radius:14px;padding:24px}.profile-head{display:flex;justify-content:space-between;align-items:center;gap:20px}.steam{background:#1b2838;color:white;border:1px solid #45627e;padding:13px 20px;border-radius:9px;font-weight:900;cursor:pointer}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}.status{font-weight:800}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#f59e0b;margin-right:8px}.inventory{margin-top:15px;display:grid;gap:9px}.item{display:flex;align-items:center;gap:12px;background:#031b1d;border:1px solid #16413d;border-radius:9px;padding:10px}.item img{width:70px;height:55px;object-fit:contain}.muted{color:#829a97}.empty{text-align:center;padding:30px;color:#829a97;border:1px dashed #355d59;border-radius:10px}.error{color:#fca5a5}@media(max-width:750px){nav{display:none}.profile-head,.grid{grid-template-columns:1fr;display:grid}.login{margin-left:auto}}
+</style></head><body>
+<header><div class="logo">TROPIC<b>TRADE</b></div><nav><a href="#home">Главная</a><a href="#market">Рынок</a><a href="#profile">Профиль</a></nav><button id="topLogin" class="login">Войти через Steam</button></header>
+<section id="home" class="page active"><div class="hero"><h1>Покупай и продавай<br><span>скины CS2</span></h1><p>Маркетплейс TropicTrade с подключением Steam.</p><a class="btn" href="#profile">Привязать Steam</a></div></section>
+<section id="market" class="page"><div class="wrap"><div class="panel"><h2>Рынок</h2><p class="muted">Раздел готов для подключения каталога объявлений.</p></div></div></section>
+<section id="profile" class="page"><div class="wrap">
+<div class="panel profile-head"><div><h1>Профиль</h1><p class="muted" id="hint">Подключи Steam, чтобы загрузить свой CS2-инвентарь.</p></div><button id="steamBtn" class="steam">🎮 Войти через Steam</button></div>
+<div class="grid"><div class="panel"><h2>Steam</h2><div id="status" class="status"><span class="dot"></span>Проверяем...</div><p id="name" class="muted"></p></div><div class="panel"><h2>Инвентарь CS2</h2><div id="inventory" class="inventory"><div class="empty">🎒<br><br>Инвентарь появится после входа.</div></div></div></div>
+<div class="panel" style="margin-top:20px"><h2>Моментальная продажа</h2><p class="muted">Сюда будут загружаться только реальные предметы из Steam-инвентаря. Тестовых скинов нет.</p></div>
+</div></section>
+<script>
+const $=x=>document.getElementById(x);
+function route(){let id=location.hash.slice(1)||"home";document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));($("."+id)||$(id)||$("home")).classList.add("active")}
+addEventListener("hashchange",route);route();
+function login(){location.href="/auth/steam"}$("topLogin").onclick=login;$("steamBtn").onclick=login;
+async function load(){
+ try{
+  const r=await fetch("/api/me"),d=await r.json();
+  if(!d.authenticated){$("status").innerHTML='<span class="dot"></span>Не подключён';return}
+  $("status").innerHTML='<span class="dot" style="background:#22c55e"></span>Подключён · '+d.steamId;
+  $("name").textContent=d.profile?.personaname||"Steam ID "+d.steamId;
+  $("hint").textContent="Steam подключён. Загружаем инвентарь...";
+  $("topLogin").textContent="Steam подключён";
+  $("topLogin").onclick=()=>location.href="/auth/logout";
+  $("steamBtn").textContent="✓ Steam подключён — выйти";
+  $("steamBtn").onclick=()=>location.href="/auth/logout";
+  inventory();
+ }catch(e){$("status").innerHTML='<span class="error">Сервер не запущен.</span>'}
+}
+async function inventory(){
+ try{
+  const r=await fetch("/api/inventory"),d=await r.json();if(!r.ok)throw 0;
+  const assets=d.assets||[],desc={};(d.descriptions||[]).forEach(x=>desc[x.classid+"_"+x.instanceid]=x);
+  if(!assets.length){$("inventory").innerHTML='<div class="empty">Инвентарь CS2 пуст или скрыт.</div>';return}
+  $("inventory").innerHTML=assets.slice(0,100).map(a=>{let x=desc[a.classid+"_"+a.instanceid]||{};let n=x.market_hash_name||x.name||"CS2 предмет";let img=x.icon_url?"https://community.cloudflare.steamstatic.com/economy/image/"+x.icon_url:"";return '<div class="item">'+(img?'<img src="'+img+'">':'🎒')+'<div><b>'+String(n).replace(/[<>]/g,"")+'</b><div class="muted">Steam Inventory</div></div></div>'}).join("");
+ }catch(e){$("inventory").innerHTML='<div class="empty error">Не удалось получить инвентарь. Проверь API Key и настройки приватности Steam.</div>'}
+}
+load();
+</script></body></html>
