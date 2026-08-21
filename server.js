@@ -47,18 +47,15 @@ app.get("/auth/steam/return",async(req,res)=>{
 
 app.get("/auth/logout",(req,res)=>req.session.destroy(()=>res.redirect("/#profile")));
 
-app.get("/api/me",async(req,res)=>{
-  if(!req.session.steamId) return res.json({authenticated:false});
-  let profile=null;
-  if(API_KEY){
-    try{
-      const r=await axios.get("https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/",{
-        params:{key:API_KEY,steamids:req.session.steamId}
-      });
-      profile=r.data.response.players?.[0]||null;
-    }catch(e){console.error(e.message);}
+app.get("/api/me", async (req, res) => {
+  if (!req.session.steamId) {
+    return res.json({ authenticated: false });
   }
-  res.json({authenticated:true,steamId:req.session.steamId,profile});
+
+  res.json({
+    authenticated: true,
+    steamId: req.session.steamId
+  });
 });
 
 app.get("/api/inventory",async(req,res)=>{
