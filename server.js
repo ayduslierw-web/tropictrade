@@ -14,7 +14,7 @@ app.use(session({
   resave:false,saveUninitialized:false,
   cookie:{httpOnly:true,sameSite:"lax",secure:false,maxAge:7*24*60*60*1000}
 }));
-app.use(express.static(path.join(__dirname,"public")));
+app.use(express.static(__dirname));
 
 app.get("/auth/steam",(req,res)=>{
   const q=new URLSearchParams({
@@ -75,5 +75,5 @@ app.get("/api/inventory",async(req,res)=>{
   }
 });
 
-app.get("/*",(req,res)=>res.sendFile(path.join(__dirname,"public","index.html")));
+app.get("/*",(req,res)=>res.sendFile(path.join(__dirname,"index.html")));
 app.listen(PORT,()=>console.log(`TropicTrade: ${BASE_URL}`));
