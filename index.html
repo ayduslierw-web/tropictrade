@@ -29,6 +29,7 @@ async function load(){
   inventory();
  }catch(e){$("status").innerHTML='<span class="error">Сервер не запущен.</span>'}
 }
+
 async function inventory(){
  try{
   const r=await fetch("/api/inventory"),d=await r.json();if(!r.ok)throw 0;
